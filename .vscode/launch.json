@@ -31,7 +31,7 @@
             "mainClass": "oy.tol.chatclient.ChatClient",
             "projectName": "ChatClient",
             "args": [
-                "/Users/anttijuustila/workspace/O4/O4-client/chatclient.properties"
+                "/Users/emppu/O4-client/chatclient.properties"
             ]
         }
     ]

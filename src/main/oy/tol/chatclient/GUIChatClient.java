@@ -1,6 +1,8 @@
 package oy.tol.chatclient;
 
 import javax.swing.*;
+import javax.swing.border.Border;
+
 import java.awt.*;
 
 import oy.tol.chat.ChangeTopicMessage;
@@ -23,11 +25,12 @@ public class GUIChatClient extends JFrame implements ChatClientDataProvider {
     private JPanel messageArea;
     private JTextField messageField;
 
+    private boolean running = true;
     private String username = DEFAULT_USER_NAME;
     private String currentChannel = "";
     private ChatTCPClient tcpClient = null;
     private int serverPort = 10000;
-    private String currentServer = "localhost:10000";
+    private String currentServer = "localhost";
 
     private boolean channelVisibility = true; //DEFAULT_COMPONENT_VISIBILITY;
 
@@ -42,9 +45,11 @@ public class GUIChatClient extends JFrame implements ChatClientDataProvider {
         add(createLeftPanel(), BorderLayout.WEST);
         add(createCenterPanel(), BorderLayout.CENTER);
 
+        tcpClient = new ChatTCPClient(this);
+        new Thread(tcpClient).start();
+
         setVisible(true);
         updateChannelList();
-        tcpClient = new ChatTCPClient(this);
     }
 
     // Käyttöliittymän vasen paneeli
@@ -80,7 +85,7 @@ public class GUIChatClient extends JFrame implements ChatClientDataProvider {
         JButton btnNewChannel = new JButton("+ New Channel");
         btnNewChannel.addActionListener(e -> openNewChannel());
 
-        JLabel connectionStatus = new JLabel(" Disconnected");
+        JLabel connectionStatus = new JLabel(" Connected");
 
         bottomPanel.add(btnNewChannel, BorderLayout.NORTH);
         bottomPanel.add(connectionStatus, BorderLayout.SOUTH);
@@ -154,14 +159,36 @@ public class GUIChatClient extends JFrame implements ChatClientDataProvider {
     }
 
 
-    // TODO
+    // Normaalin viestin lisääminen viestialueelle
     private void addMessage(String text, String nick) {
+        JPanel messagePanel = new JPanel(new BorderLayout());
+        JLabel message = new JLabel(text);
+        JLabel nickName = new JLabel(nick);
 
+        message.setHorizontalAlignment(SwingConstants.LEFT);
+        nickName.setHorizontalAlignment(SwingConstants.LEFT);
+
+        messagePanel.add(message, BorderLayout.CENTER);
+        messagePanel.add(nickName, BorderLayout.SOUTH);
+
+        messageArea.add(messagePanel);
     }
 
-    // TODO
+    // Yksityisviestin lisääminen viestialueelle
     private void addPrivateMessage(String text, String nick) {
+        JPanel messagePanel = new JPanel(new BorderLayout());
+        JLabel message = new JLabel(text);
+        JLabel nickName = new JLabel("Private Message - " + nick);
 
+        message.setHorizontalAlignment(SwingConstants.LEFT);
+        nickName.setHorizontalAlignment(SwingConstants.LEFT);
+
+        message.setBackground(new Color(134, 151, 176));
+
+        messagePanel.add(message, BorderLayout.CENTER);
+        messagePanel.add(nickName, BorderLayout.SOUTH);
+
+        messageArea.add(messagePanel);
     }
 
     //TODO perusnäkymään palaaminen
@@ -293,20 +320,28 @@ public class GUIChatClient extends JFrame implements ChatClientDataProvider {
         dialog.setVisible(true);
     }
 
-    // Päivitetään kanavalista 5 sekunnin välein (käyttäjän ei tarvitse manuaalisti päivittää napista tms.)
+    // Päivitetään kanavalista, kun client käynnistetään. Sen jälkeen 5 sekunnin välein 
+    // (käyttäjän ei tarvitse manuaalisti päivittää napista tms.)
     private void updateChannelList() {
         int delay = 5000;
+
+        requestChannels();
 
         new javax.swing.Timer(delay, e -> requestChannels()).start();   
     }
 
     // Kanavalistan nappien lissäminen
     private void addChannelButton(String channelName) {
-        JButton btn = new JButton(channelName);
-        btn.setAlignmentX(Component.CENTER_ALIGNMENT);
+        JButton btn = new JButton("# " + channelName);
+
+        btn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 20));  
+        btn.setMinimumSize(new Dimension(0, 20));
+        btn.setPreferredSize(new Dimension(0, 20));
+
+        String channelNameString = channelName.replaceAll("\\s*\\(\\d+\\)$", "");
     
         btn.addActionListener(e -> {
-            joinChannel(channelName);
+            joinChannel(channelNameString.trim().toLowerCase());
         });
 
         channelListPanel.add(btn);
@@ -320,11 +355,14 @@ public class GUIChatClient extends JFrame implements ChatClientDataProvider {
         currentChannel = channelName;
         channelVisibility = true;
         messageArea.removeAll();
+        requestChannels();
     }
 
     // Pyydetään palvelimelta kanavalista
     private void requestChannels() {
-        tcpClient.listChannels();
+        if (tcpClient != null && tcpClient.isConnected()) {
+            tcpClient.listChannels();
+        }
     }
 
     // TODO implementoi message handling
@@ -409,7 +447,7 @@ public class GUIChatClient extends JFrame implements ChatClientDataProvider {
 
     @Override
 	public void connectionClosed() {
-		// TODO ?
+		running = false;
 	}
 
     // Main metodi, josta GUI client ajetaan

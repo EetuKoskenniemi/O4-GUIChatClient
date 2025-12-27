@@ -2,6 +2,7 @@ package oy.tol.chatclient;
 
 import javax.swing.*;
 import javax.swing.border.Border;
+import javax.swing.border.EmptyBorder;
 
 import java.awt.*;
 
@@ -24,6 +25,8 @@ public class GUIChatClient extends JFrame implements ChatClientDataProvider {
 
     private JPanel messageArea;
     private JTextField messageField;
+
+    private JLabel connectionLabel;
 
     private boolean running = true;
     private String username = DEFAULT_USER_NAME;
@@ -85,10 +88,10 @@ public class GUIChatClient extends JFrame implements ChatClientDataProvider {
         JButton btnNewChannel = new JButton("+ New Channel");
         btnNewChannel.addActionListener(e -> openNewChannel());
 
-        JLabel connectionStatus = new JLabel(" Connected");
+        connectionLabel = new JLabel(" Disconnected");
 
         bottomPanel.add(btnNewChannel, BorderLayout.NORTH);
-        bottomPanel.add(connectionStatus, BorderLayout.SOUTH);
+        bottomPanel.add(connectionLabel, BorderLayout.SOUTH);
 
         panel.add(bottomPanel, BorderLayout.SOUTH);
 
@@ -161,34 +164,60 @@ public class GUIChatClient extends JFrame implements ChatClientDataProvider {
 
     // Normaalin viestin lisääminen viestialueelle
     private void addMessage(String text, String nick) {
-        JPanel messagePanel = new JPanel(new BorderLayout());
+        JPanel container = new JPanel();
+        container.setLayout(new BoxLayout(container, BoxLayout.Y_AXIS));
+        container.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        container.setAlignmentX(Component.LEFT_ALIGNMENT);
+
         JLabel message = new JLabel(text);
+        message.setOpaque(true);
+        message.setBackground(new Color(220, 235, 255));
+        message.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        message.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        Dimension preferred = message.getPreferredSize();
+        message.setMaximumSize(new Dimension(Integer.MAX_VALUE, preferred.height));
+
         JLabel nickName = new JLabel(nick);
+        nickName.setForeground(Color.GRAY);
+        nickName.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        message.setHorizontalAlignment(SwingConstants.LEFT);
-        nickName.setHorizontalAlignment(SwingConstants.LEFT);
+        container.add(message);
+        container.add(Box.createRigidArea(new Dimension(0, 2)));
+        container.add(nickName);
 
-        messagePanel.add(message, BorderLayout.CENTER);
-        messagePanel.add(nickName, BorderLayout.SOUTH);
-
-        messageArea.add(messagePanel);
+        messageArea.add(container);
+        messageArea.revalidate();
+        messageArea.repaint();
     }
 
     // Yksityisviestin lisääminen viestialueelle
     private void addPrivateMessage(String text, String nick) {
-        JPanel messagePanel = new JPanel(new BorderLayout());
+        JPanel container = new JPanel();
+        container.setLayout(new BoxLayout(container, BoxLayout.Y_AXIS));
+        container.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        container.setAlignmentX(Component.LEFT_ALIGNMENT);
+
         JLabel message = new JLabel(text);
-        JLabel nickName = new JLabel("Private Message - " + nick);
-
-        message.setHorizontalAlignment(SwingConstants.LEFT);
-        nickName.setHorizontalAlignment(SwingConstants.LEFT);
-
+        message.setOpaque(true);
         message.setBackground(new Color(134, 151, 176));
+        message.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        message.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        messagePanel.add(message, BorderLayout.CENTER);
-        messagePanel.add(nickName, BorderLayout.SOUTH);
+        Dimension preferred = message.getPreferredSize();
+        message.setMaximumSize(new Dimension(Integer.MAX_VALUE, preferred.height));
 
-        messageArea.add(messagePanel);
+        JLabel nickName = new JLabel("Private message - " + nick);
+        nickName.setForeground(Color.GRAY);
+        nickName.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        container.add(message);
+        container.add(Box.createRigidArea(new Dimension(0, 2)));
+        container.add(nickName);
+
+        messageArea.add(container);
+        messageArea.revalidate();
+        messageArea.repaint();
     }
 
     //TODO perusnäkymään palaaminen
@@ -385,6 +414,7 @@ public class GUIChatClient extends JFrame implements ChatClientDataProvider {
 
             // Kanavien lisääminen listaan
 			case Message.LIST_CHANNELS: {
+                SwingUtilities.invokeLater(() -> connectionLabel.setText(" Connected"));
 				ListChannelsMessage msg = (ListChannelsMessage)message;
 				List<String> channels = msg.getChannels();
 				if (null != channels) {
@@ -448,6 +478,7 @@ public class GUIChatClient extends JFrame implements ChatClientDataProvider {
     @Override
 	public void connectionClosed() {
 		running = false;
+        SwingUtilities.invokeLater(() -> connectionLabel.setText(" Disconnected"));
 	}
 
     // Main metodi, josta GUI client ajetaan

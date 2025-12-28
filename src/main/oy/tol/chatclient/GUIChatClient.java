@@ -27,15 +27,15 @@ public class GUIChatClient extends JFrame implements ChatClientDataProvider {
     private JTextField messageField;
 
     private JLabel connectionLabel;
-
+    
     private boolean running = true;
     private String username = DEFAULT_USER_NAME;
-    private String currentChannel = "";
+    private String currentChannel = "main";
     private ChatTCPClient tcpClient = null;
     private int serverPort = 10000;
     private String currentServer = "localhost";
 
-    private boolean channelVisibility = true; //DEFAULT_COMPONENT_VISIBILITY;
+    JLabel channelTitle = new JLabel(currentChannel);
 
     private JButton btnChangeName;
 
@@ -63,16 +63,10 @@ public class GUIChatClient extends JFrame implements ChatClientDataProvider {
         // Yläpaneeli
         JPanel topPanel = new JPanel(new BorderLayout());
 
-        JButton btnBack = new JButton("←");
-        btnBack.setFocusable(false); 
-        btnBack.setMargin(new Insets(2, 8, 2, 8));
-        btnBack.addActionListener(e -> returnToMainView());
-
         btnChangeName = new JButton(username);
         btnChangeName.setFocusable(false);
         btnChangeName.addActionListener(e -> openNameChange());
 
-        topPanel.add(btnBack, BorderLayout.WEST);
         topPanel.add(btnChangeName, BorderLayout.CENTER);
 
         panel.add(topPanel, BorderLayout.NORTH);   
@@ -108,13 +102,9 @@ public class GUIChatClient extends JFrame implements ChatClientDataProvider {
         JButton btnHelp = new JButton("Help");
         btnHelp.addActionListener(e -> openHelp());
 
-        JLabel channelTitle = new JLabel(currentChannel);
-        channelTitle.setVisible(channelVisibility);
-
         // TODO Kuvake tekstin tilalle
         JButton btnChangeChannelTopic = new JButton("Change topic");
         btnChangeChannelTopic.addActionListener(e -> openTopicChange());
-        btnChangeChannelTopic.setVisible(channelVisibility);
 
         topPanel.add(channelTitle, BorderLayout.CENTER);
         topPanel.add(btnHelp, BorderLayout.EAST);
@@ -138,7 +128,6 @@ public class GUIChatClient extends JFrame implements ChatClientDataProvider {
 
         bottomPanel.add(messageField, BorderLayout.CENTER);
         bottomPanel.add(btnSend, BorderLayout.EAST);
-        bottomPanel.setVisible(channelVisibility);
 
         panel.add(scroll, BorderLayout.CENTER);
         panel.add(bottomPanel, BorderLayout.SOUTH);
@@ -200,7 +189,7 @@ public class GUIChatClient extends JFrame implements ChatClientDataProvider {
 
         JLabel message = new JLabel(text);
         message.setOpaque(true);
-        message.setBackground(new Color(134, 151, 176));
+        message.setBackground(new Color(150, 175, 255));
         message.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         message.setAlignmentX(Component.LEFT_ALIGNMENT);
 
@@ -218,11 +207,6 @@ public class GUIChatClient extends JFrame implements ChatClientDataProvider {
         messageArea.add(container);
         messageArea.revalidate();
         messageArea.repaint();
-    }
-
-    //TODO perusnäkymään palaaminen
-    private void returnToMainView() {
-        channelVisibility = false;
     }
 
     // Käyttäjänimen vaihtaminen
@@ -279,15 +263,15 @@ public class GUIChatClient extends JFrame implements ChatClientDataProvider {
         JButton btnCancel = new JButton("Cancel");
 
         btnCreate.addActionListener(e -> {
-            String topic = field.getText().trim();
-            if (topic.isEmpty()) {
+            String name = field.getText().trim();
+            if (name.isEmpty()) {
                 JOptionPane.showMessageDialog(dialog,
-                        "Channel topic cannot be empty",
+                        "Channel name cannot be empty",
                         "Error",
                         JOptionPane.ERROR_MESSAGE);
                 return;
             }
-            joinChannel(topic);
+            joinChannel(name, "");
             dialog.dispose();
         });
 
@@ -361,28 +345,39 @@ public class GUIChatClient extends JFrame implements ChatClientDataProvider {
 
     // Kanavalistan nappien lissäminen
     private void addChannelButton(String channelName) {
-        JButton btn = new JButton("# " + channelName);
+        String cleanName = channelName.replaceAll("\\s*\\(\\d+\\)$", "");
+        String finalName = cleanName.trim().toLowerCase();
 
-        btn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 20));  
-        btn.setMinimumSize(new Dimension(0, 20));
-        btn.setPreferredSize(new Dimension(0, 20));
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.setMaximumSize(new Dimension(Integer.MAX_VALUE, 20));
+        wrapper.setBackground(Color.WHITE);
 
-        String channelNameString = channelName.replaceAll("\\s*\\(\\d+\\)$", "");
-    
+        JPanel indicator = new JPanel();
+        indicator.setPreferredSize(new Dimension(5, 20));
+
+        if (finalName.equals(currentChannel)) {
+            indicator.setBackground(new Color(150, 175, 255)); 
+        } else {
+            indicator.setBackground(new Color(0, 0, 0, 0));
+        }
+
+        JButton btn = new JButton("# " + cleanName);
+        btn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 20));
+
         btn.addActionListener(e -> {
-            joinChannel(channelNameString.trim().toLowerCase());
+            joinChannel(finalName, "");
         });
 
-        channelListPanel.add(btn);
-        channelListPanel.revalidate();
-        channelListPanel.repaint();
+        wrapper.add(indicator, BorderLayout.WEST);
+        wrapper.add(btn, BorderLayout.CENTER);
+
+        channelListPanel.add(wrapper);
     }
 
     // Kanavalle liittyminen
-    private void joinChannel(String channelName) {
+    private void joinChannel(String channelName, String topic) {
         tcpClient.changeChannelTo(channelName);
         currentChannel = channelName;
-        channelVisibility = true;
         messageArea.removeAll();
         requestChannels();
     }
@@ -433,7 +428,7 @@ public class GUIChatClient extends JFrame implements ChatClientDataProvider {
             // Muutetaan kanavan aihetta
 			case Message.CHANGE_TOPIC: {
 				ChangeTopicMessage msg = (ChangeTopicMessage)message;
-                currentChannel = msg.getTopic();
+                channelTitle.setText(" " + currentChannel + ": " + msg.getTopic()); 
 				break;
 			}
 

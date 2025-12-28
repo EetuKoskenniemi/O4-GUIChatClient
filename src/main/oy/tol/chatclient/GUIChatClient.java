@@ -147,6 +147,7 @@ public class GUIChatClient extends JFrame implements ChatClientDataProvider {
         }
 
         tcpClient.postChatMessage(text);
+        addMessage(text, username);
         messageField.setText("");
     }
 
@@ -158,10 +159,10 @@ public class GUIChatClient extends JFrame implements ChatClientDataProvider {
         container.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
         container.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        JLabel message = new JLabel(text);
+        JLabel message = new JLabel(" " + text);
         message.setOpaque(true);
         message.setBackground(new Color(220, 235, 255));
-        message.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        message.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
         message.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         Dimension preferred = message.getPreferredSize();
@@ -187,16 +188,16 @@ public class GUIChatClient extends JFrame implements ChatClientDataProvider {
         container.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
         container.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        JLabel message = new JLabel(text);
+        JLabel message = new JLabel(" " + text);
         message.setOpaque(true);
         message.setBackground(new Color(150, 175, 255));
-        message.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        message.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
         message.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         Dimension preferred = message.getPreferredSize();
         message.setMaximumSize(new Dimension(Integer.MAX_VALUE, preferred.height));
 
-        JLabel nickName = new JLabel("Private message - " + nick);
+        JLabel nickName = new JLabel(nick + " - [private]");
         nickName.setForeground(Color.GRAY);
         nickName.setAlignmentX(Component.LEFT_ALIGNMENT);
 
